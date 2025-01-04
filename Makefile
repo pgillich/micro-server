@@ -31,13 +31,11 @@ GO_TEST_FLAGS ?=
 GO_TEST_EXCLUDES ?= /api
 GO_LINT_CONFIG ?= .golangci.yaml
 SHELLCHECK_SOURCEPATH ?= ${BUILD_SCRIPTS_DIR}
-GO_PATH_SRC ?= build/go
+GO_PATH_SRC ?= build/_go
 GO_PATH ?= ${SRC_DIR}/${GO_PATH_SRC}
-GO_CACHE_SRC ?= build/go-cache
+GO_CACHE_SRC ?= build/_go-cache
 GO_CACHE ?= ${SRC_DIR}/${GO_CACHE_SRC}
-GO_MODCACHE_SRC ?= build/go-modcache
-GO_MODCACHE ?= ${SRC_DIR}/${GO_MODCACHE_SRC}
-GO_TMPDIR_SRC ?= build/go-tmpdir
+GO_TMPDIR_SRC ?= build/_go-tmpdir
 GO_TMPDIR ?= ${SRC_DIR}/${GO_TMPDIR_SRC}
 
 BUILD_VERSION ?= $(shell git describe --tags --always --dirty || echo "v0.0.0")
@@ -52,8 +50,9 @@ DEBUG_SCRIPTS ?=
 
 DOCKER_RUN_FLAGS ?= --user $$(id -u):$$(id -g) \
 	--network host \
+	--mount=type=bind,source=$(shell readlink -e ${GO_PATH_SRC}),target=${GO_PATH} \
 	--mount=type=bind,source=$(shell readlink -e ${GO_CACHE_SRC}),target=${GO_CACHE} \
-	--mount=type=bind,source=$(shell readlink -e ${GO_MODCACHE_SRC}),target=${GO_MODCACHE} \
+	--mount=type=bind,source=$(shell readlink -e ${GO_TMPDIR_SRC}),target=${GO_TMPDIR} \
 	-v /etc/group:/etc/group:ro \
 	-v /etc/passwd:/etc/passwd:ro \
 	-v /etc/shadow:/etc/shadow:ro \
@@ -68,7 +67,6 @@ DOCKER_RUN_FLAGS ?= --user $$(id -u):$$(id -g) \
 	-e CGO_ENABLED=0 \
 	-e GOPATH=${GO_PATH} \
 	-e GOCACHE=${GO_CACHE} \
-	-e GOMODCACHE=${GO_MODCACHE} \
 	-e GOTMPDIR=${GO_TMPDIR} \
 	-e GO_BUILD_FLAGS=${GO_BUILD_FLAGS} \
 	-e GO_TEST_FLAGS=${GO_TEST_FLAGS} \
@@ -84,15 +82,18 @@ DOCKERFILE_APP_DIR ?= build
 install-oapi-codegen:
 	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@${OAPI_CODEGEN_VERSION}
 
-generate:
-	mkdir -p build/go build/go-cache build/go-modcache build/go-tmpdir
+build-init:
+	mkdir -p ${GO_PATH_SRC} ${GO_CACHE_SRC} ${GO_TMPDIR_SRC}
+.PHONY: build-init
+
+generate: build-init
+	mkdir -p ${GO_PATH_SRC} ${GO_CACHE_SRC} ${GO_TMPDIR_SRC}
 	docker run ${DOCKER_RUN_FLAGS} \
 		${DOCKER_URL_PATH}/${DOCKER_BUILDER_IMAGE} \
 		bash -c ${BUILD_SCRIPTS_DIR}/generate.sh
 .PHONY: generate
 
-build:
-	mkdir -p build/go build/go-cache build/go-modcache build/go-tmpdir
+build: build-init
 	docker run ${DOCKER_RUN_FLAGS} \
 		${DOCKER_URL_PATH}/${DOCKER_BUILDER_IMAGE} \
 		bash -c ${BUILD_SCRIPTS_DIR}/build.sh
@@ -104,32 +105,23 @@ build-local:
 		-o "./build/bin/${APP_NAME}"
 .PHONY: build-local
 
-clean:
-	sudo rm -rf build/go-cache/* build/go-modcache/*
+clean: build-init
+	sudo rm -rf ${GO_PATH_SRC}/* ${GO_CACHE_SRC}/* ${GO_TMPDIR_SRC}/*
 .PHONY: clean
 
-openapi-server-ogen:
-	docker run ${DOCKER_RUN_FLAGS} \
-		${DOCKER_OGEN_PATH}/${DOCKER_OGEN_IMAGE} \
-		-target ${SRC_DIR}/pkg/api/ogen/sample \
-		-clean \
-		${SRC_DIR}/api/sample/openapi_v3_ogen.yaml
-
-tidy:
-	mkdir -p build/go build/go-cache build/go-modcache build/go-tmpdir
+tidy: build-init
 	docker run ${DOCKER_RUN_FLAGS} \
 		${DOCKER_URL_PATH}/${DOCKER_BUILDER_IMAGE} \
 		bash -c ${BUILD_SCRIPTS_DIR}/tidy.sh
 .PHONY: tidy
 
-goenv:
-	mkdir -p build/go build/go-cache build/go-modcache build/go-tmpdir
+goenv: build-init
 	docker run ${DOCKER_RUN_FLAGS} \
 		${DOCKER_URL_PATH}/${DOCKER_BUILDER_IMAGE} \
 		bash -c ${BUILD_SCRIPTS_DIR}/env.sh
 .PHONY: goenv
 
-test:
+test: build-init
 	docker run ${DOCKER_RUN_FLAGS} \
 		${DOCKER_URL_PATH}/${DOCKER_BUILDER_IMAGE} \
 		bash -c ${BUILD_SCRIPTS_DIR}/test.sh
@@ -175,3 +167,5 @@ image-kind:
 	kind load docker-image ${DOCKER_APP_PATH}/${DOCKER_APP_IMAGE} --name demo
 	sync && echo 3 | sudo tee /proc/sys/vm/drop_caches
 .PHONY: image-kind
+
+include openapi.mk

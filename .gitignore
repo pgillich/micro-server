@@ -26,8 +26,8 @@ go.work.sum
 
 __debug_bin*
 build/bin/
-build/go/
-build/go-cache/
-build/go-modcache/
-build/go-tmpdir/
+build/_go/
+build/_go-cache/
+build/_go-tmpdir/
+build/coverage/
 .vscode/*
