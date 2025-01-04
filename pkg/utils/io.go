@@ -1,13 +1,16 @@
-package configs
+package utils
 
 import (
 	"os"
+	"path"
 	"path/filepath"
+	"reflect"
+	"runtime"
 
 	yaml "github.com/goccy/go-yaml"
 )
 
-func SaveServerConfig(serverConfig ServerConfig, dirName string, fileName string) (string, error) {
+func SaveServerConfig(serverConfig any, dirName string, fileName string) (string, error) {
 	configFile := filepath.Join(dirName, fileName)
 	file, err := os.Create(configFile)
 	if err != nil {
@@ -23,10 +26,19 @@ func SaveServerConfig(serverConfig ServerConfig, dirName string, fileName string
 	return configFile, nil
 }
 
-func RenderServerConfig(serverConfig ServerConfig) (string, error) {
+func RenderServerConfig(serverConfig any) (string, error) {
 	yamlData, err := yaml.Marshal(serverConfig)
 	if err != nil {
 		return "", err
 	}
 	return string(yamlData), nil
+}
+
+func ModulePath(fn any) string {
+	value := reflect.ValueOf(fn)
+	ptr := value.Pointer()
+	ffp := runtime.FuncForPC(ptr)
+	modulePath := path.Dir(path.Dir(ffp.Name()))
+
+	return modulePath
 }

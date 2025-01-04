@@ -14,6 +14,7 @@ import (
 	"github.com/pgillich/micro-server/internal/buildinfo"
 	_ "github.com/pgillich/micro-server/internal/sample"
 	"github.com/pgillich/micro-server/pkg/logger"
+	"github.com/pgillich/micro-server/pkg/testutil"
 	// "github.com/pgillich/micro-server/internal/tracing"
 )
 
@@ -28,15 +29,15 @@ func TestE2ETestSuite(t *testing.T) {
 func (s *E2ETestSuite) TestHello() {
 	log := logger.GetLogger(buildinfo.BuildInfo.AppName(), slog.LevelDebug).With(logger.KeyTestCase, s.T().Name())
 	//tracing.SetErrorHandlerLogger(log)
-	serverConfig := configs.ServerConfig{
+	serverConfig := &configs.ServerConfig{
 		Sample: configs.SampleConfig{},
 	}
-	testConfig := configs.TestConfig{}
+	testConfig := &configs.TestConfig{}
 
-	server := runTestServerCmd(s.T(), "services", serverConfig, testConfig, []string{"sample"}, log)
-	defer server.cancel()
+	server := testutil.RunTestServerCmd(s.T(), "services", serverConfig, testConfig, []string{"sample"}, log)
+	defer server.Cancel()
 
-	testUrl, err := url.JoinPath(server.testServer.URL, "/hello")
+	testUrl, err := url.JoinPath(server.TestServer.URL, "/hello")
 	s.NoError(err, "testUrl")
 	clientCtx := logger.NewContext(context.Background(), log)
 

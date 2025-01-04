@@ -30,8 +30,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/pgillich/micro-server/configs"
 	"github.com/pgillich/micro-server/internal/buildinfo"
+	"github.com/pgillich/micro-server/pkg/configs"
 	"github.com/pgillich/micro-server/pkg/logger"
 	"github.com/pgillich/micro-server/pkg/model"
 	"github.com/pgillich/micro-server/pkg/utils"
@@ -58,9 +58,10 @@ var rootViper = viper.New()
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, args []string, testConfig configs.TestConfig) {
+func Execute(ctx context.Context, args []string, serverConfig configs.ServerConfiger, testConfig configs.TestConfiger) {
 	ctx = context.WithValue(ctx, model.CtxKeyCmd, strings.Join(append([]string{rootCmd.Use}, args...), " "))
-	ctx = context.WithValue(ctx, model.CtxKeyTestConfig, &testConfig)
+	ctx = context.WithValue(ctx, model.CtxKeyServerConfig, serverConfig)
+	ctx = context.WithValue(ctx, model.CtxKeyTestConfig, testConfig)
 	rootCmd.SetArgs(args)
 	rootCmd.SetContext(ctx)
 	if err := rootCmd.Execute(); err != nil {
@@ -84,7 +85,6 @@ func init() {
 }
 
 // initConfig reads in config file and ENV variables if set.
-// TODO use local viper instance
 // TODO do not use global cfgFile (?)
 func initConfig() {
 	if cfgFile != "" {

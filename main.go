@@ -26,9 +26,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/pgillich/micro-server/cmd"
 	"github.com/pgillich/micro-server/configs"
 	"github.com/pgillich/micro-server/internal/buildinfo"
+	"github.com/pgillich/micro-server/pkg/cmd"
 	"github.com/pgillich/micro-server/pkg/logger"
 
 	// force to run init() functions
@@ -38,6 +38,6 @@ import (
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = logger.NewContext(ctx, logger.GetLogger(buildinfo.BuildInfo.AppName(), slog.LevelDebug))
-	cmd.Execute(ctx, os.Args[1:], configs.TestConfig{})
+	cmd.Execute(ctx, os.Args[1:], &configs.ServerConfig{}, &configs.TestConfig{})
 	cancel()
 }

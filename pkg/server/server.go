@@ -14,7 +14,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/pgillich/micro-server/configs"
+	"github.com/pgillich/micro-server/pkg/configs"
 	"github.com/pgillich/micro-server/pkg/logger"
 	"github.com/pgillich/micro-server/pkg/middleware"
 	mw_server "github.com/pgillich/micro-server/pkg/middleware/server"
@@ -61,7 +61,7 @@ func RunHttpServer(h http.Handler, shutdown <-chan struct{}, addr string, log *s
 }
 
 func RunServices(ctx context.Context, buildinfo model.BuildInfo, serviceNames []string,
-	serverConfig configs.ServerConfig, testConfig *configs.TestConfig,
+	serverConfig configs.ServerConfiger, testConfig configs.TestConfiger,
 ) error {
 	_, log := logger.FromContext(ctx)
 	log.Info("SERVICES_TO_RUN", "services", strings.Join(serviceNames, ","))
@@ -93,26 +93,26 @@ func RunServices(ctx context.Context, buildinfo model.BuildInfo, serviceNames []
 	}
 
 	httpServerRunner := RunHttpServer
-	if testConfig.HttpServerRunner != nil {
-		httpServerRunner = testConfig.HttpServerRunner
+	if testConfig.GetHttpServerRunner() != nil {
+		httpServerRunner = testConfig.GetHttpServerRunner()
 	}
 
-	httpServerRunner(mux, shutdown, serverConfig.ListenAddr, log)
+	httpServerRunner(mux, shutdown, serverConfig.GetListenAddr(), log)
 	log.Info("SERVER_STARTED")
 
 	return nil
 }
 
 func PrepareService(ctx context.Context, service model.HttpServicer, buildinfo model.BuildInfo,
-	serverConfig configs.ServerConfig, testConfig *configs.TestConfig, mux *chi.Mux,
+	serverConfig configs.ServerConfiger, testConfig configs.TestConfiger, mux *chi.Mux,
 ) (func(), error) {
 	_, log := logger.FromContext(ctx)
 	hostname, _ := os.Hostname() //nolint:errcheck // not important
 	deferFn := func() {}
 
 	traceOptions := []otlptracehttp.Option{}
-	if serverConfig.TracerUrl != "" {
-		traceOptions = append(traceOptions, otlptracehttp.WithEndpointURL(serverConfig.TracerUrl))
+	if serverConfig.GetTracerUrl() != "" {
+		traceOptions = append(traceOptions, otlptracehttp.WithEndpointURL(serverConfig.GetTracerUrl()))
 		traceOptions = append(traceOptions, otlptracehttp.WithCompression(otlptracehttp.NoCompression))
 		traceOptions = append(traceOptions, otlptracehttp.WithInsecure())
 	}

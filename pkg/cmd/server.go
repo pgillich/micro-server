@@ -29,11 +29,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/pgillich/micro-server/configs"
 	int_buildinfo "github.com/pgillich/micro-server/internal/buildinfo"
+	pkg_configs "github.com/pgillich/micro-server/pkg/configs"
 	"github.com/pgillich/micro-server/pkg/logger"
 	"github.com/pgillich/micro-server/pkg/model"
 	"github.com/pgillich/micro-server/pkg/server"
+	"github.com/pgillich/micro-server/pkg/utils"
 )
 
 var serverViper = viper.New() //nolint:gochecknoglobals // CMD
@@ -48,19 +49,27 @@ var serverCmd = &cobra.Command{
 		_, log := logger.FromContext(cmd.Context())
 		log.Info("SERVER_TO_RUN", "command", fmt.Sprintf("%+v", cmd.Context().Value(model.CtxKeyCmd)))
 
-		serverConfig := configs.ServerConfig{}
+		ctxServerConfig := cmd.Context().Value(model.CtxKeyServerConfig)
+		serverConfig, is := ctxServerConfig.(pkg_configs.ServerConfiger)
+		if !is {
+			return pkg_configs.ErrFatalServerConfig
+		}
 		InheritViperConfig(serverViper)
-		if err := serverViper.Unmarshal(&serverConfig); err != nil {
+		if err := serverViper.Unmarshal(serverConfig); err != nil {
 			return err
 		}
-		serverConfigStr, err := configs.RenderServerConfig(serverConfig)
+		serverConfigStr, err := utils.RenderServerConfig(serverConfig)
 		if err != nil {
 			return err
 		}
 		log.Debug("SERVER_CONFIG", "config", serverConfigStr)
 
-		testConfig := cmd.Context().Value(model.CtxKeyTestConfig).(*configs.TestConfig)
-		httpServerRunner := testConfig.HttpServerRunner
+		ctxTestConfig := cmd.Context().Value(model.CtxKeyTestConfig)
+		testConfig, is := ctxTestConfig.(pkg_configs.TestConfiger)
+		if !is {
+			return pkg_configs.ErrFatalServerConfig
+		}
+		httpServerRunner := testConfig.GetHttpServerRunner()
 		if httpServerRunner == nil {
 			httpServerRunner = server.RunHttpServer
 		}

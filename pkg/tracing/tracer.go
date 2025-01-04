@@ -16,7 +16,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.11.0"
 
-	"github.com/pgillich/micro-server/configs"
+	"github.com/pgillich/micro-server/pkg/configs"
 	"github.com/pgillich/micro-server/pkg/logger"
 	"github.com/pgillich/micro-server/pkg/model"
 )

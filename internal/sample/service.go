@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/pgillich/micro-server/configs"
+	pkg_configs "github.com/pgillich/micro-server/pkg/configs"
 	"github.com/pgillich/micro-server/pkg/model"
 	"github.com/pgillich/micro-server/pkg/server"
 )
@@ -20,7 +21,7 @@ var (
 )
 
 type HttpService struct {
-	serverConfig configs.ServerConfig
+	serverConfig *configs.ServerConfig
 	testConfig   *configs.TestConfig
 	apiServer    *ApiServer
 }
@@ -37,12 +38,20 @@ func (s *HttpService) Name() string {
 	return ServiceName
 }
 
-func (s *HttpService) Prepare(ctx context.Context, serverConfig configs.ServerConfig, testConfig *configs.TestConfig,
+func (s *HttpService) Prepare(ctx context.Context, serverConfig pkg_configs.ServerConfiger, testConfig pkg_configs.TestConfiger,
 	httpRouter chi.Router,
 ) error {
-	s.serverConfig = serverConfig
+	var is bool
+	s.serverConfig, is = serverConfig.(*configs.ServerConfig)
+	if !is {
+		return pkg_configs.ErrFatalServerConfig
+	}
 	s.apiServer = &ApiServer{service: s}
-	s.testConfig = testConfig
+
+	s.testConfig, is = testConfig.(*configs.TestConfig)
+	if !is {
+		return pkg_configs.ErrFatalServerConfig
+	}
 
 	httpRouter.Get("/hello", s.apiServer.GetHello)
 

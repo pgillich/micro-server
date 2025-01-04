@@ -31,10 +31,14 @@ GO_TEST_FLAGS ?=
 GO_TEST_EXCLUDES ?= /api
 GO_LINT_CONFIG ?= .golangci.yaml
 SHELLCHECK_SOURCEPATH ?= ${BUILD_SCRIPTS_DIR}
+GO_PATH_SRC ?= build/go
+GO_PATH ?= ${SRC_DIR}/${GO_PATH_SRC}
 GO_CACHE_SRC ?= build/go-cache
 GO_CACHE ?= ${SRC_DIR}/${GO_CACHE_SRC}
 GO_MODCACHE_SRC ?= build/go-modcache
 GO_MODCACHE ?= ${SRC_DIR}/${GO_MODCACHE_SRC}
+GO_TMPDIR_SRC ?= build/go-tmpdir
+GO_TMPDIR ?= ${SRC_DIR}/${GO_TMPDIR_SRC}
 
 BUILD_VERSION ?= $(shell git describe --tags --always --dirty || echo "v0.0.0")
 BUILD_TIME = $(shell date +%FT%T%z)
@@ -62,8 +66,10 @@ DOCKER_RUN_FLAGS ?= --user $$(id -u):$$(id -g) \
 	-e BUILD_VERSION=${BUILD_VERSION} \
 	-e BUILD_TIME=${BUILD_TIME} \
 	-e CGO_ENABLED=0 \
+	-e GOPATH=${GO_PATH} \
 	-e GOCACHE=${GO_CACHE} \
 	-e GOMODCACHE=${GO_MODCACHE} \
+	-e GOTMPDIR=${GO_TMPDIR} \
 	-e GO_BUILD_FLAGS=${GO_BUILD_FLAGS} \
 	-e GO_TEST_FLAGS=${GO_TEST_FLAGS} \
 	-e GO_TEST_EXCLUDES=${GO_TEST_EXCLUDES} \
@@ -79,14 +85,14 @@ install-oapi-codegen:
 	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@${OAPI_CODEGEN_VERSION}
 
 generate:
-	mkdir -p build/go-cache build/go-modcache
+	mkdir -p build/go build/go-cache build/go-modcache build/go-tmpdir
 	docker run ${DOCKER_RUN_FLAGS} \
 		${DOCKER_URL_PATH}/${DOCKER_BUILDER_IMAGE} \
 		bash -c ${BUILD_SCRIPTS_DIR}/generate.sh
 .PHONY: generate
 
 build:
-	mkdir -p build/go-cache build/go-modcache
+	mkdir -p build/go build/go-cache build/go-modcache build/go-tmpdir
 	docker run ${DOCKER_RUN_FLAGS} \
 		${DOCKER_URL_PATH}/${DOCKER_BUILDER_IMAGE} \
 		bash -c ${BUILD_SCRIPTS_DIR}/build.sh
@@ -110,11 +116,18 @@ openapi-server-ogen:
 		${SRC_DIR}/api/sample/openapi_v3_ogen.yaml
 
 tidy:
-	mkdir -p build/go-cache build/go-modcache
+	mkdir -p build/go build/go-cache build/go-modcache build/go-tmpdir
 	docker run ${DOCKER_RUN_FLAGS} \
 		${DOCKER_URL_PATH}/${DOCKER_BUILDER_IMAGE} \
 		bash -c ${BUILD_SCRIPTS_DIR}/tidy.sh
 .PHONY: tidy
+
+goenv:
+	mkdir -p build/go build/go-cache build/go-modcache build/go-tmpdir
+	docker run ${DOCKER_RUN_FLAGS} \
+		${DOCKER_URL_PATH}/${DOCKER_BUILDER_IMAGE} \
+		bash -c ${BUILD_SCRIPTS_DIR}/env.sh
+.PHONY: goenv
 
 test:
 	docker run ${DOCKER_RUN_FLAGS} \
