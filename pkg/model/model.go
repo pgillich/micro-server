@@ -13,6 +13,7 @@ type contextKey string
 const (
 	CtxKeyCmd              = contextKey("command")
 	CtxKeyHttpServerRunner = contextKey("HttpServerController")
+	CtxKeyBuildInfo        = contextKey("BuildInfo")
 	CtxKeyServerConfig     = contextKey("ServerConfig")
 	CtxKeyTestConfig       = contextKey("TestConfig")
 )

@@ -2,9 +2,8 @@ package configs
 
 import (
 	"github.com/pgillich/micro-server/pkg/configs"
+	mw_client_model "github.com/pgillich/micro-server/pkg/middleware/client/model"
 )
-
-//mw_client_model "github.com/pgillich/micro-server/pkg/middleware/client/model"
 
 type ServerConfig struct {
 	ListenAddr string
@@ -30,6 +29,18 @@ type TestConfig struct {
 		CaptureMatchers      []mw_client_model.CaptureMatcher
 	*/
 	HttpServerRunner configs.HttpServerRunner
+}
+
+func (c *TestConfig) GetCaptureTransportMode() mw_client_model.CaptureTransportMode {
+	return mw_client_model.CaptureTransportModeNone
+}
+
+func (c *TestConfig) GetCaptureDir() string {
+	return "/tmp"
+}
+
+func (c *TestConfig) GetCaptureMatchers() []mw_client_model.CaptureMatcher {
+	return []mw_client_model.CaptureMatcher{}
 }
 
 func (c *TestConfig) GetHttpServerRunner() configs.HttpServerRunner {

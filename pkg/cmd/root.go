@@ -58,8 +58,9 @@ var rootViper = viper.New()
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, args []string, serverConfig configs.ServerConfiger, testConfig configs.TestConfiger) {
+func Execute(ctx context.Context, args []string, buildInfo model.BuildInfo, serverConfig configs.ServerConfiger, testConfig configs.TestConfiger) {
 	ctx = context.WithValue(ctx, model.CtxKeyCmd, strings.Join(append([]string{rootCmd.Use}, args...), " "))
+	ctx = context.WithValue(ctx, model.CtxKeyBuildInfo, buildInfo)
 	ctx = context.WithValue(ctx, model.CtxKeyServerConfig, serverConfig)
 	ctx = context.WithValue(ctx, model.CtxKeyTestConfig, testConfig)
 	rootCmd.SetArgs(args)

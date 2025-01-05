@@ -4,7 +4,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	//mw_client_model "github.com/pgillich/micro-server/pkg/middleware/client/model"
+
+	mw_client_model "github.com/pgillich/micro-server/pkg/middleware/client/model"
 )
 
 const (
@@ -21,7 +22,15 @@ type ServerConfiger interface {
 	GetTracerUrl() string
 }
 
+type CaptureConfiger interface {
+	GetCaptureTransportMode() mw_client_model.CaptureTransportMode
+	GetCaptureDir() string
+	GetCaptureMatchers() []mw_client_model.CaptureMatcher
+}
+
 type TestConfiger interface {
+	CaptureConfiger
+
 	GetHttpServerRunner() HttpServerRunner
 	SetHttpServerRunner(HttpServerRunner)
 }

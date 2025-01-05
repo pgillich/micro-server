@@ -9,8 +9,9 @@ import (
 
 	_ "github.com/pgillich/micro-server/internal/sample"
 	"github.com/pgillich/micro-server/pkg/cmd"
-	pkg_configs "github.com/pgillich/micro-server/pkg/configs"
+	srv_configs "github.com/pgillich/micro-server/pkg/configs"
 	"github.com/pgillich/micro-server/pkg/logger"
+	"github.com/pgillich/micro-server/pkg/model"
 	"github.com/pgillich/micro-server/pkg/utils"
 	// "github.com/pgillich/micro-server/pkg/tracing"
 )
@@ -23,7 +24,7 @@ type TestServer struct {
 }
 
 func RunTestServerCmd(t *testing.T, serverName string,
-	serverConfig pkg_configs.ServerConfiger, testConfig pkg_configs.TestConfiger,
+	buildInfo model.BuildInfo, serverConfig srv_configs.ServerConfiger, testConfig srv_configs.TestConfiger,
 	args []string, log *slog.Logger,
 ) *TestServer {
 	ctx := logger.NewContext(context.Background(), log)
@@ -52,7 +53,7 @@ func RunTestServerCmd(t *testing.T, serverName string,
 	}, args...)
 
 	go func() {
-		cmd.Execute(server.Ctx, command, serverConfig, testConfig)
+		cmd.Execute(server.Ctx, command, buildInfo, serverConfig, testConfig)
 	}()
 	<-started
 	//time.Sleep(1 * time.Second)
@@ -60,7 +61,7 @@ func RunTestServerCmd(t *testing.T, serverName string,
 	return server
 }
 
-func HttpTestserverRunner(server *httptest.Server, started chan struct{}) pkg_configs.HttpServerRunner {
+func HttpTestserverRunner(server *httptest.Server, started chan struct{}) srv_configs.HttpServerRunner {
 	return func(h http.Handler, shutdown <-chan struct{}, addr string, log *slog.Logger) {
 		server.Config.Handler = h
 		log.Info("TestServer start")

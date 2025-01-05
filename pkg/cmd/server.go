@@ -29,8 +29,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	int_buildinfo "github.com/pgillich/micro-server/internal/buildinfo"
-	pkg_configs "github.com/pgillich/micro-server/pkg/configs"
+	srv_configs "github.com/pgillich/micro-server/pkg/configs"
 	"github.com/pgillich/micro-server/pkg/logger"
 	"github.com/pgillich/micro-server/pkg/model"
 	"github.com/pgillich/micro-server/pkg/server"
@@ -49,10 +48,14 @@ var serverCmd = &cobra.Command{
 		_, log := logger.FromContext(cmd.Context())
 		log.Info("SERVER_TO_RUN", "command", fmt.Sprintf("%+v", cmd.Context().Value(model.CtxKeyCmd)))
 
-		ctxServerConfig := cmd.Context().Value(model.CtxKeyServerConfig)
-		serverConfig, is := ctxServerConfig.(pkg_configs.ServerConfiger)
+		buildInfo, is := cmd.Context().Value(model.CtxKeyBuildInfo).(model.BuildInfo)
 		if !is {
-			return pkg_configs.ErrFatalServerConfig
+			return srv_configs.ErrFatalServerConfig
+		}
+
+		serverConfig, is := cmd.Context().Value(model.CtxKeyServerConfig).(srv_configs.ServerConfiger)
+		if !is {
+			return srv_configs.ErrFatalServerConfig
 		}
 		InheritViperConfig(serverViper)
 		if err := serverViper.Unmarshal(serverConfig); err != nil {
@@ -64,17 +67,16 @@ var serverCmd = &cobra.Command{
 		}
 		log.Debug("SERVER_CONFIG", "config", serverConfigStr)
 
-		ctxTestConfig := cmd.Context().Value(model.CtxKeyTestConfig)
-		testConfig, is := ctxTestConfig.(pkg_configs.TestConfiger)
+		testConfig, is := cmd.Context().Value(model.CtxKeyTestConfig).(srv_configs.TestConfiger)
 		if !is {
-			return pkg_configs.ErrFatalServerConfig
+			return srv_configs.ErrFatalServerConfig
 		}
 		httpServerRunner := testConfig.GetHttpServerRunner()
 		if httpServerRunner == nil {
 			httpServerRunner = server.RunHttpServer
 		}
 
-		err = server.RunServices(cmd.Context(), int_buildinfo.BuildInfo, args, serverConfig, testConfig)
+		err = server.RunServices(cmd.Context(), buildInfo, args, serverConfig, testConfig)
 		time.Sleep(time.Second)
 
 		return err

@@ -34,7 +34,8 @@ func (s *E2ETestSuite) TestHello() {
 	}
 	testConfig := &configs.TestConfig{}
 
-	server := testutil.RunTestServerCmd(s.T(), "services", serverConfig, testConfig, []string{"sample"}, log)
+	server := testutil.RunTestServerCmd(s.T(), "services",
+		buildinfo.BuildInfo, serverConfig, testConfig, []string{"sample"}, log)
 	defer server.Cancel()
 
 	testUrl, err := url.JoinPath(server.TestServer.URL, "/hello")

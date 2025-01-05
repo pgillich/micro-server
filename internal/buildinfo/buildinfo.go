@@ -1,7 +1,7 @@
 package buildinfo
 
 import (
-	pkg_utils "github.com/pgillich/micro-server/pkg/utils"
+	srv_utils "github.com/pgillich/micro-server/pkg/utils"
 )
 
 // Version is set by the linker.
@@ -37,7 +37,7 @@ func (b *BuildInfoApp) AppName() string {
 }
 
 func (b *BuildInfoApp) ModulePath() string {
-	return pkg_utils.ModulePath(b.ModulePath)
+	return srv_utils.ModulePath(b.ModulePath)
 }
 
 var BuildInfo = &BuildInfoApp{}

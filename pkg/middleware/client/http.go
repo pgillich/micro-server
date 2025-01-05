@@ -12,10 +12,12 @@ import (
 	metric_api "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
+	srv_configs "github.com/pgillich/micro-server/pkg/configs"
 	"github.com/pgillich/micro-server/pkg/logger"
 	"github.com/pgillich/micro-server/pkg/middleware"
-	mw_client_model "github.com/pgillich/micro-server/pkg/middleware/client/model"
 	"github.com/pgillich/micro-server/pkg/model"
+	"github.com/pgillich/micro-server/pkg/tracing"
+	"github.com/pgillich/micro-server/pkg/utils"
 )
 
 // LogTransport implements the http.RoundTripper interface and wraps
@@ -164,12 +166,37 @@ func (t *MetricTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	return res, err //nolint:wrapcheck // should not be changed
 }
 
+func NewHttpClient(hostname string, serviceName string, targetServiceName string,
+	buildInfo model.BuildInfo, captureConfig srv_configs.CaptureConfiger,
+	log *slog.Logger, logReqLevel slog.Level, logRespLevel slog.Level,
+) *http.Client {
+	return DecorateHttpClient(utils.NewHttpClient(),
+		// Trace
+		map[string]string{
+			tracing.SpanKeyComponent: buildInfo.AppName(),
+			tracing.SpanKeyService:   serviceName,
+			tracing.SpanKeyInstance:  hostname,
+		},
+		// Metrics
+		middleware.MetrHttpOut, middleware.MetrHttpOutDescr,
+		map[string]string{
+			middleware.MetrAttrService:       serviceName,
+			middleware.MetrAttrTargetService: targetServiceName,
+		},
+		buildInfo,
+		// Log
+		log, logReqLevel, logRespLevel,
+		// Test
+		captureConfig,
+	)
+}
+
 func DecorateHttpClient(httpClient *http.Client,
 	traceAttributes map[string]string,
 	metricName string, metricDescription string, metricLabels map[string]string,
 	buildinfo model.BuildInfo,
 	log *slog.Logger, logReqLevel slog.Level, logRespLevel slog.Level,
-	captureTransportMode mw_client_model.CaptureTransportMode, captureDir string, captureMatchers []mw_client_model.CaptureMatcher,
+	captureConfig srv_configs.CaptureConfiger,
 ) *http.Client {
 	attributes := []attribute.KeyValue{}
 	for aKey, aVal := range traceAttributes {
@@ -181,9 +208,9 @@ func DecorateHttpClient(httpClient *http.Client,
 				NewCaptureTransport(
 					httpClient.Transport,
 
-					captureTransportMode,
-					captureDir,
-					captureMatchers,
+					captureConfig.GetCaptureTransportMode(),
+					captureConfig.GetCaptureDir(),
+					captureConfig.GetCaptureMatchers(),
 				),
 				logReqLevel,
 				logRespLevel,
