@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/go-chi/chi/v5"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/pgillich/micro-server/configs"
 	srv_configs "github.com/pgillich/micro-server/pkg/configs"
@@ -39,7 +40,7 @@ func (s *HttpService) Name() string {
 }
 
 func (s *HttpService) Prepare(ctx context.Context, serverConfig srv_configs.ServerConfiger, testConfig srv_configs.TestConfiger,
-	httpRouter chi.Router,
+	httpRouter chi.Router, tr trace.Tracer,
 ) error {
 	var is bool
 	s.serverConfig, is = serverConfig.(*configs.ServerConfig)

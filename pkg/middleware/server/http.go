@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/otel/baggage"
 	metric_api "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.11.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/pgillich/micro-server/pkg/logger"

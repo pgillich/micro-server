@@ -146,7 +146,7 @@ func PrepareService(ctx context.Context, service model.HttpServicer, buildinfo m
 		chi_middleware.Recoverer,
 	)
 
-	if err := service.Prepare(ctx, serverConfig, testConfig, r); err != nil {
+	if err := service.Prepare(ctx, serverConfig, testConfig, r, tr); err != nil {
 		return deferFn, err
 	}
 

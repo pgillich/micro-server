@@ -120,7 +120,7 @@ func Logger(values map[string]string, beginLevel slog.Level, endLevel slog.Level
 			var log *slog.Logger
 			var err error
 			ctx, log = logger.FromContext(ctx, logValues...)
-			log.Log(ctx, beginLevel, "GO_BEGIN")
+			log.Log(ctx, beginLevel, "INT_BEGIN")
 			beginTS := time.Now()
 			defer func() {
 				elapsedSec := time.Since(beginTS).Seconds()
@@ -128,7 +128,7 @@ func Logger(values map[string]string, beginLevel slog.Level, endLevel slog.Level
 				if err != nil {
 					args = append(args, logger.KeyError, err)
 				}
-				log.With(args...).Log(ctx, endLevel, "GO_END")
+				log.With(args...).Log(ctx, endLevel, "INT_END")
 			}()
 
 			retVal, err := next(ctx)
