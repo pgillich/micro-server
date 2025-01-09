@@ -50,20 +50,19 @@ func SemAcquire(sem *semaphore.Weighted) InternalMiddleware {
 func Span(tr trace.Tracer, spanName string) InternalMiddleware {
 	return func(next InternalMiddlewareFn) InternalMiddlewareFn {
 		return func(ctx context.Context) (interface{}, error) {
-			//spanParent := trace.SpanFromContext(ctx).SpanContext()
+			spanParent := trace.SpanFromContext(ctx).SpanContext()
 			spanKind := trace.SpanKindInternal
 			ctx, spanChild := tr.Start(ctx, spanName,
 				trace.WithSpanKind(spanKind),
 			)
-			ctx, _ = logger.FromContext(ctx,
-				/*
-					"traceID", spanParent.TraceID().String(),
-					"spanParentID", spanParent.SpanID().String(),
-				*/
-				"spanID", spanChild.SpanContext().SpanID().String(),
-			)
-
 			defer spanChild.End()
+
+			logFields := []any{}
+			if !spanParent.IsValid() {
+				logFields = append(logFields, "traceID", spanChild.SpanContext().TraceID().String())
+			}
+			logFields = append(logFields, "spanID", spanChild.SpanContext().SpanID().String())
+			ctx, _ = logger.FromContext(ctx, logFields...)
 
 			return next(ctx)
 		}
