@@ -24,13 +24,14 @@ var (
 )
 
 // SemAcquire is a middleware to acquire semaphore
-func SemAcquire(sem *semaphore.Weighted) InternalMiddleware {
-	return func(next InternalMiddlewareFn) InternalMiddlewareFn {
-		return func(ctx context.Context) (interface{}, error) {
+func SemAcquire[T any](sem *semaphore.Weighted) InternalMiddleware[T] {
+	return func(next InternalMiddlewareFn[T]) InternalMiddlewareFn[T] {
+		return func(ctx context.Context) (T, error) {
 			if err := sem.Acquire(ctx, 1); err != nil {
 				err = fmt.Errorf("cannot acquire semaphore: %w", err)
+				var zero T
 
-				return nil, err
+				return zero, err
 			}
 			defer func() {
 				select {
@@ -47,9 +48,9 @@ func SemAcquire(sem *semaphore.Weighted) InternalMiddleware {
 
 // Span is a middleware to start/end a new span, using from context.
 // Sets "traceID", "spanParentID" and "spanID" log values.
-func Span(tr trace.Tracer, spanName string) InternalMiddleware {
-	return func(next InternalMiddlewareFn) InternalMiddlewareFn {
-		return func(ctx context.Context) (interface{}, error) {
+func Span[T any](tr trace.Tracer, spanName string) InternalMiddleware[T] {
+	return func(next InternalMiddlewareFn[T]) InternalMiddlewareFn[T] {
+		return func(ctx context.Context) (T, error) {
 			spanParent := trace.SpanFromContext(ctx).SpanContext()
 			spanKind := trace.SpanKindInternal
 			ctx, spanChild := tr.Start(ctx, spanName,
@@ -70,10 +71,10 @@ func Span(tr trace.Tracer, spanName string) InternalMiddleware {
 }
 
 // TryCatch is a middleware for catching Go panic and propagating it as an error
-func TryCatch() InternalMiddleware {
-	return func(next InternalMiddlewareFn) InternalMiddlewareFn {
-		return func(ctx context.Context) (interface{}, error) {
-			var retVal interface{}
+func TryCatch[T any]() InternalMiddleware[T] {
+	return func(next InternalMiddlewareFn[T]) InternalMiddlewareFn[T] {
+		return func(ctx context.Context) (T, error) {
+			var retVal T
 			var err error
 			if errTryCatch := tryCatch(func() {
 				retVal, err = next(ctx)
@@ -108,14 +109,14 @@ func tryCatch(f func()) func() error {
 
 // Logger is a middleware for logging begin and end messages.
 // A new logger with values is added to the context.
-func Logger(values map[string]string, beginLevel slog.Level, endLevel slog.Level) InternalMiddleware {
+func Logger[T any](values map[string]string, beginLevel slog.Level, endLevel slog.Level) InternalMiddleware[T] {
 	logValues := make([]any, 0, len(values)*2)
 	for k, v := range values {
 		logValues = append(logValues, k, v)
 	}
 
-	return func(next InternalMiddlewareFn) InternalMiddlewareFn {
-		return func(ctx context.Context) (interface{}, error) {
+	return func(next InternalMiddlewareFn[T]) InternalMiddlewareFn[T] {
+		return func(ctx context.Context) (T, error) {
 			var log *slog.Logger
 			var err error
 			ctx, log = logger.FromContext(ctx, logValues...)
@@ -147,9 +148,9 @@ Metrics is a middleware to make count and duration report
 	defined in "unitSuffixes", see
 	https://github.com/open-telemetry/opentelemetry-go/blob/main/exporters/prometheus/exporter.go#L343
 */
-func Metrics(ctx context.Context, meter metric_api.Meter, name string,
+func Metrics[T any](ctx context.Context, meter metric_api.Meter, name string,
 	description string, attributes map[string]string, errFormatter middleware.ErrFormatter,
-) InternalMiddleware {
+) InternalMiddleware[T] {
 	_, log := logger.FromContext(ctx)
 	baseAttrs := make([]attribute.KeyValue, 0, len(attributes))
 	for aKey, aVal := range attributes {
@@ -166,8 +167,8 @@ func Metrics(ctx context.Context, meter metric_api.Meter, name string,
 		panic(err)
 	}
 
-	return func(next InternalMiddlewareFn) InternalMiddlewareFn {
-		return func(ctx context.Context) (interface{}, error) {
+	return func(next InternalMiddlewareFn[T]) InternalMiddlewareFn[T] {
+		return func(ctx context.Context) (T, error) {
 			beginTS := time.Now()
 
 			retVal, err := next(ctx)
