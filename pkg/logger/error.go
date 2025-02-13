@@ -37,3 +37,9 @@ func (ew *ErrWrap) Is(target error) bool {
 	return errors.Is(ew.err, target) ||
 		errors.Is(ew.werr, target)
 }
+
+func WrapErr(err error) (error, func(error) error) {
+	return err, func(werr error) error {
+		return Wrap(err, werr)
+	}
+}
